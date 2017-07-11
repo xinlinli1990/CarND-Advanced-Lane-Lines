@@ -19,7 +19,9 @@ The goals / steps of this project are the following:
 * Warp the detected lane boundaries back onto the original image.
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
+## Video
 
+[![Project video color space 1](https://img.youtube.com/vi/M8IlQE8kJyE/0.jpg)](https://www.youtube.com/watch?v=M8IlQE8kJyE)
 
 ## Camera Calibration
 The raw images captured by a camera may contain distortions introduced by its lens. 
@@ -73,7 +75,7 @@ OpenCV find the corners of chessboard, then compute the image distortion by assu
  calibrate other images from this camera.
 The code in the first block of [Report.ipynb](./code/Report.ipynb)
 
-## Lane Finding Pipeline
+## Lane Finding Pipeline (Single image)
 
 ### 1. Correct image for lens distortion
 
@@ -115,7 +117,7 @@ warped = cv2.warpPerspective(undist, M, img_size)
 
 In this step, color thresholds were used to split the lane marking pixels from the road background.
 To determine the best threshold and color space for spliting the lane markings,
-all three videos were converted into different color space.
+all three sample videos were converted into different color space.
 
 [![Project video color space 1](https://img.youtube.com/vi/eC2aAvnPy20/0.jpg)](https://www.youtube.com/watch?v=eC2aAvnPy20)
 	
@@ -129,7 +131,7 @@ Further more, the median intensity value of each color channel inside RoI (Regio
 In these videos, the RoI area was dominated by the road surface pixels, so the median intensity value of 
 each color channel is also the intensity value of the road surface in each color channel. 
 
-![](./images/channel.jpg)
+![](./images/channel.JPG)
 
 By observing the variation of the intensity of road surface in different color channels, we can find out the 
 best color space for spliting road surface and lane markings. An ideal color space should have flat road surface 
@@ -146,72 +148,106 @@ intensity so that the road surface pixels can be splited robustly.
 Based on the analysis aboved, LAB space was selected for simplicity reasons. Although the color thresholds are expected to be more robust and accurate 
 if combining multiple color channels and stacking multiple thresholds.
 
-After the color threshold step, 	
+```python
+def apply_color_threshold(img, color_space_conversion, color_thres):
+    C012 = cv2.cvtColor(img, color_space_conversion)
+
+    C0 = C012[:, :, 0]
+    C1 = C012[:, :, 1]
+    C2 = C012[:, :, 2]
+
+    C0_binary_output = np.zeros_like(C0)
+    C1_binary_output = np.zeros_like(C1)
+    C2_binary_output = np.zeros_like(C2)
+
+    C0_binary_output[(C0 > color_thres[0][0]) & (C0 < color_thres[0][1])] = 1
+    C1_binary_output[(C1 > color_thres[1][0]) & (C1 < color_thres[1][1])] = 1
+    C2_binary_output[(C2 > color_thres[2][0]) & (C2 < color_thres[2][1])] = 1
+
+    return C0_binary_output, C1_binary_output, C2_binary_output
+	
+# Apply color space thresold
+LAB_space = cv2.COLOR_RGB2LAB
+LAB_thres = [[210, 255], [0, 255], [150, 255]]  # lower and upper bounds for L, A and B channel
+L_binary_output, A_binary_output, B_binary_output = apply_color_threshold(undistorted, LAB_space, LAB_thres)
+```
+
+After the color threshold step, road surface pixels were removed and lane marking pixels were marked. 
+For simplicity reason, only two center lanes were preserved, 
+other lanes are removed by applying RoI threshold in the previous step.	
 ![bird-view2](./images/sliding.png)
 
-### 4. Apply sliding windows search to separate left and right lanes
+### 4. Apply sliding windows method to separate left and right lanes
 
+```python
+window_search_params = {
+	'window_width': 50,
+	'window_height': 40,  # Break image into 9 vertical layers since image height is 720 #80
+	'margin': 100,  # How much to slide left and right for searching
+}
 
+window_centroids = find_window_centroids(warped, previous_centers=previous_centers, **window_search_params)
+l_points, r_points = apply_window_centroids_mask(warped, window_centroids, **window_search_params)
+```
 
 ![bird-view2](./images/sliding2.png)
 
-### 5. Fit second order polynomial and measure the curvature radius
+### 5. Fit second order polynomial and measure real-world position
+
+After seperated left and right lane pixels, the lanes can be approximated by fitting second order polynomial.
+And the curvature radius of lane can also be calculated by scaling the pixel positions from image coordinates to
+real world positions.
+
+```python
+def polynomial_fit(points, ploty, xm_per_pix=1, ym_per_pix=1):
+	"""
+	Args:
+		points: pixels of the lane
+		ploty: y coordinates for polynomial interpolation
+		xm_per_pix: meter per pixel along x-direction
+		ym_per_pix: meter per pixel along y-direction
+	Returns:
+		fit_x: x coordinates of fitting polynomial (fit_x[0]: x_bottom fit_x[-1]: x_top)
+		curverad: curvature radius of the lane in real world
+	"""
+    y_eval = np.max(ploty)
+    x = np.argwhere(points == 255)[:, 1]
+    y = np.argwhere(points == 255)[:, 0]
+
+    # Fit a second order polynomial to pixel positions in each lane line
+    fit = np.polyfit(y, x, 2)
+    fit_x = fit[0] * ploty ** 2 + fit[1] * ploty + fit[2]
+	
+	# Scale x and y coordinates from image coordinates to real world coordinates
+	fit_cr = np.polyfit(y*ym_per_pix, x*xm_per_pix, 2)
+	# Compute real world curvature
+    curverad = ((1 + (2 * fit_cr[0] * y_eval + fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * fit_cr[0])
+
+    return fit_x, curverad
+```
+
+![fit](./images/fit.png)
+
+To measure the relative position between lane and car, we need to define the lane center and car center.
+In this project, an assummption has been made that the image center is also the car center. 
+The lane center is approximated by the center of bottom x coordinates of left and right lane fitting polynomials.
+By comparing the lane center and car center in the image, the real world center-shift distance can be obtained.
 
 ### 6. Mark the lane area
 
-
-
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
-
-![alt text][image3]
-
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
-
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+In the last step, the lane area was filled with green color and apply to a reverse perspective transform so that
+the lane area is unwarp to the original image.
 
 ```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
+
 ```
+	
+![fill](./images/fill.png)
+![unwarp](./images/unwarp.png)
 
-This resulted in the following source and destination points:
+Then combine the lane area and original image, 
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
-
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
-
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
-
-![alt text][image5]
-
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
-
-I did this in lines # through # in my code in `my_other_file.py`
-
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
-
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
+![Combine](./images/Combine.png)
 
 ---
 
