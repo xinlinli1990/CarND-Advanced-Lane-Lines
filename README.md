@@ -8,7 +8,7 @@ based on the raw images collected by a camera mounted on the front center positi
 
 ![](./images/intro.jpg)
 
-### ** Pipeline **
+#### The lane finding pipeline contains following steps:
 * Compute the camera calibration matrix and distortion coefficients with a set of chessboard images.
 * Apply a distortion correction to raw images.
 * Apply a perspective transform to rectify binary image ("birds-eye view").
