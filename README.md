@@ -93,7 +93,7 @@ To simplified the lane detection, the road surface was projected to the birds-ey
 # Get image size
 img_size = undist.shape[0:2][::-1]
 
-# Get source point positions from undistorted image
+# Get source point positions from undistorted image (Red square)
 PerspectiveTrans_vertices = get_PerspectiveTrans_vertices(undist)
 
 # Set destination point positions (top_offset from the top, horizontal_offset from left and right)
@@ -112,6 +112,41 @@ warped = cv2.warpPerspective(undist, M, img_size)
 ![bird-view2](./images/bird-view2.png)
 
 ### 3. Apply color threshold to remove road surface and preserve lane markings
+
+In this step, color thresholds were used to split the lane marking pixels from the road background.
+To determine the best threshold and color space for spliting the lane markings,
+all three videos were converted into different color space.
+
+[![Project video color space 1](https://img.youtube.com/vi/eC2aAvnPy20/0.jpg)](https://www.youtube.com/watch?v=eC2aAvnPy20)
+	
+| Video                       | Color space           | Video link                                  |
+|:---------------------------:|:---------------------:|:-------------------------------------------:|
+| project_video.mp4           | sobel_x, sobel_y, RGB, HLS, LAB, YUV    | https://www.youtube.com/watch?v=Wk2xvQiW7zQ |
+| challenge_video.mp4         | sobel_x, sobel_y, RGB, HLS, LAB, YUV    | https://www.youtube.com/watch?v=86mGJaZAPVI |
+| harder_challenge_video.mp4  | sobel_x, sobel_y, RGB, HLS, LAB, YUV    | https://www.youtube.com/watch?v=KsdNHcoVnGE |
+
+Further more, the median intensity value of each color channel inside RoI (Region of Interest) was plotted. 
+In these videos, the RoI area was dominated by the road surface pixels, so the median intensity value of 
+each color channel is also the intensity value of the road surface in each color channel. 
+
+![](./images/channel.jpg)
+
+By observing the variation of the intensity of road surface in different color channels, we can find out the 
+best color space for spliting road surface and lane markings. An ideal color space should have flat road surface 
+intensity so that the road surface pixels can be splited robustly.
+
+![](./images/harder_challenge_video.jpg)
+
+| Video                       | Color space           | Image link                                  |
+|:---------------------------:|:---------------------:|:-------------------------------------------:|
+| project_video.mp4           | RGB, HLS, LAB, YUV    | [project_video_RoI_median](./images/project_video.jpg) |
+| challenge_video.mp4         | RGB, HLS, LAB, YUV    | [challenge_video_RoI_median](./images/challenge_video.jpg) |
+| harder_challenge_video.mp4  | RGB, HLS, LAB, YUV    | [harder_challenge_video_RoI_median](./images/harder_challenge_video.jpg) |
+
+Based on the analysis aboved, LAB space was selected for simplicity reasons. Although the color thresholds are expected to be more robust and accurate 
+if combining multiple color channels and stacking multiple thresholds.
+
+After the color threshold step, 	
 ![bird-view2](./images/sliding.png)
 
 ### 4. Apply sliding windows search to separate left and right lanes
