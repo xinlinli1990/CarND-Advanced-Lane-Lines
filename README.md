@@ -19,24 +19,50 @@ The goals / steps of this project are the following:
 * Warp the detected lane boundaries back onto the original image.
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-### Camera Calibration
 
-#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
+## Camera Calibration
+The raw images captured by a camera may contain distortions introduced by its lens. 
+These distortions will introduce error when we try to detect the position of real world objects based on images.
+Luckily, the camera distortion is constant and we can correct them. 
+The first step in this project is calibrating the camera distortion with OpenCV.
+![chessboard](./images/chessboard_undist.png)	
+![chessboard2](./images/chessboard_undist2.png)
 
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
+OpenCV find the corners of chessboard, then compute the image distortion by assumming that
+ all corner points are located on one flat plane. By averaging multiple chessboard images 
+ taken by the same camera, OpenCV can compute the camera calibration matrix and use it to 
+ calibrate other images from this camera.
+The code in the first block of [Report.ipynb](./code/Report.ipynb)
 
-I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
+## Lane Finding Pipeline
 
-![alt text][image1]
+### 1. Correct image for lens distortion
 
-### Pipeline (single images)
+Apply the camera calibration matrix obtained from previous step on the images to correct the lens distortion.
 
-#### 1. Provide an example of a distortion-corrected image.
+Here is an example of using camera calibration matrix to undistort images.
+![image_undist](./images/image_undist.png)
+The code in the "Undistort test images" block of [Report.ipynb](./code/Report.ipynb)
 
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
+### 2. Apply perspective transform to images (Warp to birds-eye view)
+![bird-view](./images/bird-view.png)
+![bird-view2](./images/bird-view2.png)
+
+### 3. Apply color threshold to remove road surface and preserve lane markings
+![bird-view2](./images/sliding.png)
+
+### 4. Apply sliding windows search to separate left and right lanes
+
+
+
+![bird-view2](./images/sliding2.png)
+
+### 5. Fit second order polynomial and measure the curvature radius
+
+### 6. Mark the lane area
+
+
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
