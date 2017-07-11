@@ -3,12 +3,16 @@
 ## Introduction
 
 This prject aims to implement a robust computer-vision-based lane finding pipeline for self driving car. 
+This lane finding pipeline is capable of detecting and highlighting the current lane and measuring real-world vehicle position 
+based on the raw images collected by a camera mounted on the front center position of the car.
 
-The pipeline 
+![](./images/intro.jpg)
+
+### ** Pipeline **
 * Compute the camera calibration matrix and distortion coefficients with a set of chessboard images.
 * Apply a distortion correction to raw images.
-* Use color transforms to create a thresholded binary image.
 * Apply a perspective transform to rectify binary image ("birds-eye view").
+* Use color transforms to create a thresholded binary image.
 * Detect lane pixels and fit to find the lane boundary.
 * Determine the curvature of the lane and vehicle position with respect to center.
 * Warp the detected lane boundaries back onto the original image.
@@ -244,12 +248,9 @@ Combined the lane area and original image, we obtain the final result.
 
 ### Pipeline (video)
 
-The single image pipeline is not 
+The lane detection pipeline can be much more robust than the single image pipeline by taking advantages of 
+video properties that ajacent frames shows similar contents. 
 
----
+Work in progress ...
 
-### Discussion
-
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
-
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+TODO: Add details of video pipeline
