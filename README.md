@@ -26,6 +26,44 @@ The raw images captured by a camera may contain distortions introduced by its le
 These distortions will introduce error when we try to detect the position of real world objects based on images.
 Luckily, the camera distortion is constant and we can correct them. 
 The first step in this project is calibrating the camera distortion with OpenCV.
+
+```python
+# prepare object points
+nx = 9
+ny = 6
+
+objpoint = np.zeros((nx*ny, 3), np.float32)
+objpoint[:,:2] = np.mgrid[0:nx, 0:ny].T.reshape(-1,2)
+
+# Colloect objpoints and imgpoints from all given chessboard images
+objpoints = []
+imgpoints = []
+
+for fname in chessboard_image_paths:
+    img = cv2.imread(fname)
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Find the chessboard corners
+    ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
+       
+    if ret is True:
+        objpoints.append(objpoint)
+        imgpoints.append(corners)
+
+# Undistort image with objpoints and imgpoints
+def cal_undistort(img, objpoints, imgpoints):
+    """
+    A function that takes an image, object points, and image points
+    performs the camera calibration, image distortion correction and 
+    returns the undistorted image
+    """
+    ret, mtx, dist, rve, tve = cv2.calibrateCamera(objpoints, imgpoints, img.shape[0:2], None, None)
+    undist = cv2.undistort(img, mtx, dist, None, mtx)
+    return undist
+```
+
 ![chessboard](./images/chessboard_undist.png)	
 ![chessboard2](./images/chessboard_undist2.png)
 
@@ -40,12 +78,36 @@ The code in the first block of [Report.ipynb](./code/Report.ipynb)
 ### 1. Correct image for lens distortion
 
 Apply the camera calibration matrix obtained from previous step on the images to correct the lens distortion.
+```python
+undistorted = cal_undistort(img, objpoints, imgpoints)
+```
 
 Here is an example of using camera calibration matrix to undistort images.
 ![image_undist](./images/image_undist.png)
-The code in the "Undistort test images" block of [Report.ipynb](./code/Report.ipynb)
 
-### 2. Apply perspective transform to images (Warp to birds-eye view)
+### 2. Apply perspective transform to images (birds-eye view)
+
+To simplified the lane detection, the road surface was projected to the birds-eye view by applying perspective transform.
+
+```python
+# Get image size
+img_size = undist.shape[0:2][::-1]
+
+# Get source point positions from undistorted image
+PerspectiveTrans_vertices = get_PerspectiveTrans_vertices(undist)
+
+# Set destination point positions (top_offset from the top, horizontal_offset from left and right)
+horizontal_offset = 550
+top_offset = 670
+src = np.float32(PerspectiveTrans_vertices)
+dst = np.float32([[horizontal_offset, top_offset], [img_size[0] - horizontal_offset, top_offset],
+				  [img_size[0] - horizontal_offset, img_size[1]], [horizontal_offset, img_size[1]]])
+
+# Compute perspective tranform matrix and warp the image.
+M = cv2.getPerspectiveTransform(src, dst)
+warped = cv2.warpPerspective(undist, M, img_size)
+```
+
 ![bird-view](./images/bird-view.png)
 ![bird-view2](./images/bird-view2.png)
 
