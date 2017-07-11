@@ -1,18 +1,13 @@
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
-
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
-
----
-
 # **Advanced Lane Finding Project**
 
 ## Introduction
 
-The goals / steps of this project are the following:
+This prject aims to implement a robust computer-vision-based lane finding pipeline for self driving car. 
 
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
+The pipeline 
+* Compute the camera calibration matrix and distortion coefficients with a set of chessboard images.
 * Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
+* Use color transforms to create a thresholded binary image.
 * Apply a perspective transform to rectify binary image ("birds-eye view").
 * Detect lane pixels and fit to find the lane boundary.
 * Determine the curvature of the lane and vehicle position with respect to center.
@@ -21,7 +16,7 @@ The goals / steps of this project are the following:
 
 ## Video
 
-[![Project video color space 1](https://img.youtube.com/vi/M8IlQE8kJyE/0.jpg)](https://www.youtube.com/watch?v=M8IlQE8kJyE)
+[![Project video color space 1](https://img.youtube.com/vi/l3lIVtXIZcM/0.jpg)](https://www.youtube.com/watch?v=l3lIVtXIZcM)
 
 ## Camera Calibration
 The raw images captured by a camera may contain distortions introduced by its lens. 
@@ -236,16 +231,12 @@ By comparing the lane center and car center in the image, the real world center-
 ### 6. Mark the lane area
 
 In the last step, the lane area was filled with green color and apply to a reverse perspective transform so that
-the lane area is unwarp to the original image.
-
-```python
-
-```
+the lane area was warped to the original lane shape.
 	
 ![fill](./images/fill.png)
 ![unwarp](./images/unwarp.png)
 
-Then combine the lane area and original image, 
+Combined the lane area and original image, we obtain the final result.
 
 ![Combine](./images/Combine.png)
 
@@ -253,9 +244,7 @@ Then combine the lane area and original image,
 
 ### Pipeline (video)
 
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./project_video.mp4)
+The single image pipeline is not 
 
 ---
 
