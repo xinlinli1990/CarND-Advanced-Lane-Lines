@@ -259,7 +259,7 @@ fitting for the combination of all lane images in the buffer.
 
 This buffer greatly improve the robustness of the lane detection especially for the detection of breaken lane markings.
 
-Click to watch video with lane images in the buffer
+Click to watch video with buffer lane image visualization
 [![Click to watch video](./images/video.JPG)](https://youtu.be/GGI2wNHx0to)
 
 However, for simplicity reason, the color thresholds implemented in the single image lane detection pipeline is relatively simple.
