@@ -251,6 +251,24 @@ Combined the lane area and original image, we obtain the final result.
 The lane detection pipeline can be much more robust than the single image pipeline by taking advantages of 
 video properties that ajacent frames shows similar contents. 
 
-Work in progress ...
+An assumption has been made that the lanes in the video are time-invariant during very short time period. 
+Thus I used a buffer to preserve most recent lane prediction from previous frames. The buffer drops the 
+oldest lane when reaching its max capacity, which set to 12 frames in this project corresponding to 0.5 second in the video.
+Instead of fitting second order polynomial for single image, the actual prediction for each frame in the video is the polynomial 
+fitting for the combination of all lane images in the buffer. 
 
-TODO: Add details of video pipeline
+This buffer greatly improve the robustness of the lane detection especially for the detection of breaken lane markings.
+
+[![Click to watch video](./images/video.JPG)](https://youtu.be/GGI2wNHx0to)
+
+However, for simplicity reason, the color thresholds implemented in the single image lane detection pipeline is relatively simple.
+Sometimes the single image pipeline might occur error detection. To avoid these errors, a filtering process was also implemented.
+Before the actual predictions for each frames, two-sided [Grubbs' test](https://en.wikipedia.org/wiki/Grubbs%27_test_for_outliers)
+was used to remove obviously different lanes in the buffer based on their top x coordinate from the single image pipeline.
+
+
+The buffer combining Grubbs' test improve robustness of the lane detection, but they also introduce side effect. 
+If the lane geometry varing rapidly during short time period, the old lane images in the buffer might dominate Grubbs' test,
+recent images might be eliminated due to their obviously difference from the existing lane images. To avoid this side effect, 
+timestamp was added to all lane images in the buffer. The existing lane images were dropped if they already exist in the buffer too long.
+In this project, previous lane images can last in the buffer no more than 24 frames which accounts for 1 second.
