@@ -257,7 +257,7 @@ oldest lane when reaching its max capacity, which set to 12 frames in this proje
 Instead of fitting second order polynomial for single image, the actual prediction for each frame in the video is the polynomial 
 fitting for the combination of all lane images in the buffer. 
 
-This buffer greatly improve the robustness of the lane detection especially for the detection of breaken lane markings.
+This buffer greatly improve the robustness of the lane detection especially for the detection of broken lane markings.
 
 Click to watch video with buffer lane image visualization
 [![Click to watch video](./images/video.JPG)](https://youtu.be/GGI2wNHx0to)
